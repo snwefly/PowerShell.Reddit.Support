@@ -1,0 +1,10 @@
+*.zip
+*.exe
+*.txt
+
+saved/**
+downloads/**
+downloads_parrallel/**
+data/**
+tmp/**
+test/**
