@@ -29,10 +29,10 @@ The same command but with ```-KeyName``` will only return the entries where the 
     Search-Registry -Path "HKLM:\SYSTEM\CurrentControlSet\Services" -SearchRegex "svchost" -KeyName
 ```
 
-The same command but with ```-ValueData``` will only return the entries where the value data match "svchost"
+The same command but with ```-PropertyValue``` will only return the entries where the value data match "svchost"
 
 ```
-    Search-Registry -Path "HKLM:\SYSTEM\CurrentControlSet\Services" -SearchRegex "svchost" -ValueData
+    Search-Registry -Path "HKLM:\SYSTEM\CurrentControlSet\Services" -SearchRegex "svchost" -PropertyValue
 ```
 
 ### REGEX
@@ -44,7 +44,7 @@ Since search uses the ```-match``` operator, it does a regex matching. ***So all
 Here the ```^``` and the ```$``` characters are used to specify the start and end of the string so that we only search for data containing "Core"
 
 ```
-    Search-Registry -Path "HKLM:\SYSTEM\CurrentControlSet\Services" -SearchRegex "^Core$" -ValueData
+    Search-Registry -Path "HKLM:\SYSTEM\CurrentControlSet\Services" -SearchRegex "^Core$" -PropertyValue
 ```
 
 #### Multiple Words
@@ -98,39 +98,11 @@ But the ones used by a regular users are only those 3:
 - HKEY_CURRENT_USER
 - HKEY_CLASSES_ROOT
 
-#### NOT RECOMMENDED - search all hives
-
-If you want to search ***ALL HIVES*** you can use this path: 
-
-```
-    $RootRegistryPath = "Registry::\"
-
-    Search-Registry -Path $RootRegistryPath -SearchRegex "searchstring" -Recurse
-```
-
-Since a lot on values you dont use may be returned, __I dont recommend it.__
-
-Search multiple Hives like so:
-
+#### Search multiple Hives like so:
 
 ```
     $Hives = @('HKCU:\', 'HKLM:\')
-    $Results = @()
-    ForEach($hive in $Hives){
-    	Search-Registry -Path $hive -SearchRegex "Wavebrowser|Wavsor" -Recurse -SilentErrors
-    }
-    
-```
-
-Or this:
-
-```
-    $Hives = @('HKCU:\SOFTWARE', 'HKLM:\SYSTEM\CurrentControlSet\Services')
-    $Results = @()
-    ForEach($hive in $Hives){
-    	Search-Registry -Path $hive -SearchRegex "InfPatchComplete|^Core$" -Recurse -Depth 2 -SilentErrors
-    }
-    
+    Search-Registry -Path $Hives -SearchRegex "Wavebrowser|Wavsor" -Recurse -SilentErrors
 ```
 
 ### Access Errors in Registry

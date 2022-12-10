@@ -23,67 +23,60 @@ Search-Registry -Path HKLM:\SYSTEM\CurrentControlSet\Services\* -SearchRegex "sv
 Search-Registry -Path HKLM:\SOFTWARE\Microsoft -Recurse -ValueNameRegex "ValueName1|ValueName2" -ValueDataRegex "ValueData" -KeyNameRegex "KeyNameToFind1|KeyNameToFind2" 
 
 .EXAMPLE
-# SEARCH AL HIVES (HKEY_PERFORMANCE_DATA, HKEY_CURRENT_CONFIG, HKEY_CURRENT_USER, HKEY_CLASSES_ROOT, HKEY_LOCAL_MACHINE, HKEY_USERS and HKEY_CURRENT_CONFIG) for strings 'Wavsor' and 'Wavebrowser'
-$RootRegistryPath = "Registry::\"
+# HKEY_CURRENT_USER, HKEY_CLASSES_ROOT, HKEY_LOCAL_MACHINE for strings 'Wavsor' and 'Wavebrowser'
+$RootRegistryPath = @("HKLM:\", "HKCU:\")
 Search-Registry -Path $RootRegistryPath -SearchRegex "Wavebrowser|Wavsor"
 #> 
     [CmdletBinding()] 
     param( 
-        [Parameter(Mandatory, Position=0, ValueFromPipelineByPropertyName)] 
-        [Alias("PsPath")] 
-        # Registry path to search 
+        [Parameter(Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true, HelpMessage="The Paths to search in")] 
+        [Alias("p", "PsPath")] 
         [string[]] $Path, 
-        # Specifies whether or not all subkeys should also be searched 
-        [switch] $Recurse, 
-        [Parameter(ParameterSetName="SingleSearchString", Mandatory)] 
-        # A regular expression that will be checked against key names, value names, and value data (depending on the specified switches) 
+        [Parameter(Mandatory=$true, Position=1, ValueFromPipelineByPropertyName=$true, HelpMessage="Search string regex")] 
         [string] $SearchRegex, 
-        [Parameter(ParameterSetName="SingleSearchString")] 
-        # When the -SearchRegex parameter is used, this switch means that key names will be tested (if none of the three switches are used, keys will be tested) 
+        [Parameter(Mandatory=$false, HelpMessage="Compare the -SearchRegex string parameter to the registry key name")] 
         [switch] $KeyName, 
-        [Parameter(ParameterSetName="SingleSearchString")] 
-        # When the -SearchRegex parameter is used, this switch means that the value names will be tested (if none of the three switches are used, value names will be tested) 
-        [switch] $ValueName, 
-        [Parameter(ParameterSetName="SingleSearchString")] 
-        # When the -SearchRegex parameter is used, this switch means that the value data will be tested (if none of the three switches are used, value data will be tested) 
-        [switch] $ValueData, 
-        [Parameter(ParameterSetName="MultipleSearchStrings")] 
-        # Specifies a regex that will be checked against key names only 
-        [string] $KeyNameRegex, 
-        [Parameter(ParameterSetName="MultipleSearchStrings")] 
-        # Specifies a regex that will be checked against value names only 
-        [string] $ValueNameRegex, 
-        [Parameter(ParameterSetName="MultipleSearchStrings")] 
-        # Specifies a regex that will be checked against value data only 
-        [string] $ValueDataRegex,
-        # No Errors please
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory=$false, HelpMessage="Compare the -SearchRegex string parameter to the registry property name")] 
+        [switch] $PropertyName, 
+        [Parameter(Mandatory=$false, HelpMessage="Compare the -SearchRegex string parameter to the registry property value")] 
+        [switch] $PropertyValue, 
+        [Parameter(Mandatory=$false, HelpMessage="No Errors please")]
         [switch] $SilentErrors,
-        [Parameter(Mandatory=$false)]
-        [uint32] $Depth = 0
+        [Parameter(Mandatory=$false, HelpMessage="Depth of recursion")]
+        [uint32] $Depth,
+        [Parameter(Mandatory=$false, HelpMessage="Specifies whether or not all subkeys should also be searched ")]
+        [switch] $Recurse
     ) 
 
     begin { 
-        switch ($PSCmdlet.ParameterSetName) { 
-            SingleSearchString { 
-                $NoSwitchesSpecified = -not ($PSBoundParameters.ContainsKey("KeyName") -or $PSBoundParameters.ContainsKey("ValueName") -or $PSBoundParameters.ContainsKey("ValueData")) 
-                Write-Verbose "NoSwitchesSpecified  -> $NoSwitchesSpecified" 
+        [string] $KeyNameRegex=''
+        [string] $PropertyNameRegex=''
+        [string] $PropertyValueRegex=''
 
-                if ($KeyName -or $NoSwitchesSpecified) { $KeyNameRegex = $SearchRegex      ; Write-Verbose "SearchFor  -> KeyName   $KeyNameRegex"  } 
-                if ($ValueName -or $NoSwitchesSpecified) { $ValueNameRegex = $SearchRegex  ; Write-Verbose "SearchFor  -> ValueName $ValueNameRegex"  } 
-                if ($ValueData -or $NoSwitchesSpecified) { $ValueDataRegex = $SearchRegex  ; Write-Verbose "SearchFor  -> ValueData $ValueDataRegex"  } 
-            } 
-            MultipleSearchStrings { 
-                # No extra work needed 
-            } 
+        $NoSwitchesSpecified = -not ($PSBoundParameters.ContainsKey("KeyName") -or $PSBoundParameters.ContainsKey("PropertyName") -or $PSBoundParameters.ContainsKey("PropertyValue")) 
+        Write-Verbose "NoSwitchesSpecified  -> $NoSwitchesSpecified" 
+
+        if ($KeyName -or $NoSwitchesSpecified) { 
+            $KeyNameRegex = $SearchRegex
+            Write-Verbose "SearchFor  -> KeyName `"$KeyNameRegex`""  
         } 
+        if ($PropertyName -or $NoSwitchesSpecified) { 
+            $PropertyNameRegex = $SearchRegex
+            Write-Verbose "SearchFor  -> PropertyName `"$PropertyNameRegex"
+        } 
+        if ($PropertyValue -or $NoSwitchesSpecified) { 
+            $PropertyValueRegex = $SearchRegex
+            Write-Verbose "SearchFor  -> PropertyValue `"$PropertyValueRegex`""  
+        } 
+         
+        
     } 
 
     process { 
         
         [System.Collections.ArrayList]$Results = [System.Collections.ArrayList]::new()
         foreach ($CurrentPath in $Path) { 
-            if($Depth -gt 0){
+            if($PSBoundParameters.ContainsKey('Depth') -eq $True){
                 $AllObjs = Get-ChildItem $CurrentPath -Recurse:$Recurse -ev AccessErrors -ea silent -Depth $Depth
             }else{
                 $AllObjs = Get-ChildItem $CurrentPath -Recurse:$Recurse -ev AccessErrors -ea silent
@@ -107,44 +100,44 @@ Search-Registry -Path $RootRegistryPath -SearchRegex "Wavebrowser|Wavsor"
                         }  
                     } 
 
-                    if ($ValueNameRegex) {  
-                        Write-Verbose ("{0}: Checking ValueNamesRegex" -f $Key.Name) 
+                    if ($PropertyNameRegex) {  
+                        Write-Verbose ("{0}: Checking PropertyNameRegex" -f $Key.Name) 
 
-                        if ($Key.GetValueNames() -match $ValueNameRegex) {  
+                        if ($Key.GetValueNames() -match $PropertyNameRegex) {  
                             
                             [string[]]$Names = $Key.GetValueNames()
                             $Value = ''
                             FOrEach($name in $Names){
-                                if($name -match $ValueNameRegex) {
+                                if($name -match $PropertyNameRegex) {
                                    $Value = $name 
                                 }
                             }
                             Write-Verbose "  -> Match found! $Value"
                             [PSCustomObject]$o = [PSCustomObject] @{ 
                                 Key = $Key 
-                                Reason = "ValueName" 
+                                Reason = "PropertyName" 
                                 String = $Value
                             } 
                             [void]$Results.Add($o)
                         }  
                     } 
 
-                    if ($ValueDataRegex) {  
-                        Write-Verbose ("{0}: Checking ValueDataRegex" -f $Key.Name) 
-                        if (($Key.GetValueNames() | % { $Key.GetValue($_) }) -match $ValueDataRegex) {  
+                    if ($PropertyValueRegex) {  
+                        Write-Verbose ("{0}: Checking PropertyValueRegex" -f $Key.Name) 
+                        if (($Key.GetValueNames() | % { $Key.GetValue($_) }) -match $PropertyValueRegex) {  
                        
                             [string[]]$Names = $Key.GetValueNames()
                             $Value = ''
                             FOrEach($name in $Names){
                                 $TestValue = $Key.GetValue($name) 
-                                if($TestValue -match $ValueDataRegex) {
+                                if($TestValue -match $PropertyValueRegex) {
                                    $Value = $Key.GetValue($name) 
                                 }
                             }
                             Write-Verbose "  -> Match found! $Value"
                             [PSCustomObject]$o = [PSCustomObject] @{ 
                                 Key = $Key 
-                                Reason = "ValueData" 
+                                Reason = "PropertyValue" 
                                 String = $Value
                             } 
                             [void]$Results.Add($o)
