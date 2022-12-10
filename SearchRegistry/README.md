@@ -110,11 +110,27 @@ If you want to search ***ALL HIVES*** you can use this path:
 
 Since a lot on values you dont use may be returned, __I dont recommend it.__
 
+Search multiple Hives like so:
+
+
 ```
-    $Hives = @('HKCU:\')
+    $Hives = @('HKCU:\', 'HKLM:\')
+    $Results = @()
     ForEach($hive in $Hives){
-    	Search-Registry -Path $hive -SearchRegex "searchstring" -Recurse
+    	Search-Registry -Path $hive -SearchRegex "Wavebrowser|Wavsor" -Recurse -SilentErrors
     }
+    
+```
+
+Or this:
+
+```
+    $Hives = @('HKCU:\SOFTWARE', 'HKLM:\SYSTEM\CurrentControlSet\Services')
+    $Results = @()
+    ForEach($hive in $Hives){
+    	Search-Registry -Path $hive -SearchRegex "InfPatchComplete|^Core$" -Recurse -Depth 2 -SilentErrors
+    }
+    
 ```
 
 ### Access Errors in Registry
@@ -130,4 +146,12 @@ You will get somethis like this.
 	WARNING: Access Error: HKEY_CURRENT_USER\SOFTWARE\DevelopmentTestTest
 	WARNING: Total Access Errors: 2
 
+```
+
+### SilentErrors
+
+Silence Access Errors by using ```-SilentErrors```
+
+```
+    Search-Registry -Path $RootRegistryPath -SearchRegex "searchstring" -Recurse -SilentErrors
 ```

@@ -55,7 +55,12 @@ Search-Registry -Path $RootRegistryPath -SearchRegex "Wavebrowser|Wavsor"
         [string] $ValueNameRegex, 
         [Parameter(ParameterSetName="MultipleSearchStrings")] 
         # Specifies a regex that will be checked against value data only 
-        [string] $ValueDataRegex 
+        [string] $ValueDataRegex,
+        # No Errors please
+        [Parameter(Mandatory=$false)]
+        [switch] $SilentErrors,
+        [Parameter(Mandatory=$false)]
+        [uint32] $Depth = 0
     ) 
 
     begin { 
@@ -78,8 +83,13 @@ Search-Registry -Path $RootRegistryPath -SearchRegex "Wavebrowser|Wavsor"
         
         [System.Collections.ArrayList]$Results = [System.Collections.ArrayList]::new()
         foreach ($CurrentPath in $Path) { 
+            if($Depth -gt 0){
+                $AllObjs = Get-ChildItem $CurrentPath -Recurse:$Recurse -ev AccessErrors -ea silent -Depth $Depth
+            }else{
+                $AllObjs = Get-ChildItem $CurrentPath -Recurse:$Recurse -ev AccessErrors -ea silent
+            }
             
-            Get-ChildItem $CurrentPath -Recurse:$Recurse -ev AccessErrors -ea silent | ForEach-Object { 
+            $AllObjs | ForEach-Object { 
                     $Key = $_ 
 
                     if ($KeyNameRegex) {  
@@ -142,15 +152,19 @@ Search-Registry -Path $RootRegistryPath -SearchRegex "Wavebrowser|Wavsor"
                     } 
                 } 
         } 
-        $AccessErrorsCounts = $AccessErrors.Count
-        if($AccessErrorsCounts -gt 0){
 
-            $AccessErrors | % {
-                Write-Warning "Access Error: $($_.TargetObject)"
+        if($PSBoundParameters.ContainsKey('SilentErrors') -eq $False){
+            $AccessErrorsCounts = $AccessErrors.Count
+            if($AccessErrorsCounts -gt 0){
+
+                $AccessErrors | % {
+                    Write-Warning "Access Error: $($_.TargetObject)"
+                }
+                Write-Warning "Total Access Errors: $AccessErrorsCounts"
+                
             }
-            Write-Warning "Total Access Errors: $AccessErrorsCounts"
-            
         }
+
         return $Results
     } 
 } 
