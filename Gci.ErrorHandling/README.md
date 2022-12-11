@@ -28,3 +28,5 @@ Actually list the 3 test folders and handles the errors
 	C:\Users\gp\AppData\Local\Temp\TestGciErrors\Normal\child_2
 	C:\Users\gp\AppData\Local\Temp\TestGciErrors\Normal\child_3
 ```
+
+![Results](https://raw.githubusercontent.com/arsscriptum/PowerShell.Reddit.Support/main/Gci.ErrorHandling/img/err.png)
