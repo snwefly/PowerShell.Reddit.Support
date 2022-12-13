@@ -1,20 +1,31 @@
 
+[CmdletBinding(SupportsShouldProcess)] 
+param( 
+    [Parameter(Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true, HelpMessage="The name of the mutex")] 
+    [string]$Name
+)
+
 . "$PSScriptRoot\Mutex.ps1"
 
-[System.Threading.Mutex]$mutant;
 
- # Obtain a system mutex that prevents more than one deployment taking place at the same time.
-[bool]$wasCreated = $false;
-$mutant = New-Mutex -Name "M"
-
-$StartTime = [DateTime]::Now
-$StopTime = $StartTime.AddSeconds(20)
-Write-Host "Running." -n
-While($StopTime -gt [DateTime]::Now){
-     Start-Sleep 1
-    Write-Host " ." -n
+Function DoWorkSon([int]$WaitFor){
+    Write-Host "`n[Starting Work] " -f DarkCyan -n 
+    For($i = $WaitFor ; $i -gt 0 ; $i-- ){
+        Start-Sleep 1
+        Write-Host "." -n
+    }
+    Write-Host "`n[Stopped]" -f DarkCyan
 }
-Write-Host "`nStopped." 
-    
-$mutant.ReleaseMutex(); 
-$mutant.Dispose();    
+
+
+[bool]$wasCreated = $False
+[System.Threading.Mutex]$mutant = [System.Threading.Mutex]::new($True, $Name, [ref]$wasCreated)
+if($wasCreated){
+    Write-Verbose "Mutex Created `"$Name`""
+    DoWorkSon(20)
+
+    $mutant.ReleaseMutex(); 
+    $mutant.Dispose();
+    Write-Verbose "Mutex Disposed `"$Name`""
+        
+}

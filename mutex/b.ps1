@@ -1,14 +1,19 @@
 
 
+[CmdletBinding(SupportsShouldProcess)] 
+param( 
+    [Parameter(Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true, HelpMessage="The name of the mutex")] 
+    [string]$Name
+)
+
 
 . "$PSScriptRoot\Mutex.ps1"
 
-[System.Threading.Mutex]$mutant;
 
-$ready = $False
 Write-Host "Waiting for script A to terminate..."
 
-$mutant = Wait-Mutex -Name "M"
+[System.Threading.Mutex]$mutant = Wait-OnMutex -Name "$Name"
+ 
 Write-Host "Script A terminated!" -f Green
 
 $mutant.ReleaseMutex(); 

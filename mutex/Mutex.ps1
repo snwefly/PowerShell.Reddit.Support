@@ -17,38 +17,52 @@ function New-Mutex {
     Specifies the name of the Mutex to create/reference
 
 #>
-    [CmdletBinding()] 
+    [CmdletBinding(SupportsShouldProcess)] 
     param( 
         [Parameter(Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true, HelpMessage="The name of the mutex")] 
         [string]$Name
     )
     [bool] $createdMutex = $false
-    $mutex = New-Object System.Threading.Mutex($true, $Name, [ref] $createdMutex)
+    $mutex = [System.Threading.Mutex]::new($true, $Name, [ref] $createdMutex)
+    Write-Verbose "[New-Mutex] createdMutex $createdMutex"
     $mutex
 }
 
-function Wait-Mutex 
+function Wait-OnMutex 
 {
-    [CmdletBinding()] 
+    [CmdletBinding(SupportsShouldProcess)] 
     param( 
         [Parameter(Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true, HelpMessage="The name of the mutex")] 
         [string]$Name
     )
-    while(-not (Test-Mutex -Name $Name)){
-        Start-Sleep -Milliseconds 200
-    }
+    Write-Verbose "[Test-OnMutex] start waiting for `"$Name`""
+    try
+    {
+        $MutexInstance = [System.Threading.Mutex]::new($False, $Name)
 
+        while (-not $MutexInstance.WaitOne(1000))
+        {
+            Start-Sleep -m 500;
+        }
+        Write-Verbose "[Test-OnMutex] stop waiting for `"$Name`""
+        return $MutexInstance
+    } 
+    catch [System.Threading.AbandonedMutexException] 
+    {
+        $MutexInstance = [System.Threading.Mutex]::new($False, $Name)
+        return Wait-OnMutex -Name $Name
+    }
 }
 
 function Test-Mutex 
 {
-    [CmdletBinding()] 
+    [CmdletBinding(SupportsShouldProcess)] 
     param( 
         [Parameter(Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true, HelpMessage="The name of the mutex")] 
         [string]$Name
     )
     Write-Verbose "Attempting to grab mutex $Name" 
-    $sessionHandle = New-Object System.Threading.Mutex $false, $Name
+    $sessionHandle = [System.Threading.Mutex]::new($False, $Name)
     $isAvailable = $false
 
     try
