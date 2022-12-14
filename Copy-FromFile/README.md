@@ -1,32 +1,14 @@
-# Handling Errors in Get-ChildItems
+# Copy-FromFile function
 
-This code shows how to use ```ErrorVariable``` argument to store and handle errors when listing folders with Get-ChildItems.
+This is in response to [/u/happy_Bunny1](https://www.reddit.com/user/happy_Bunny1/) who asked in this [post](https://www.reddit.com/r/PowerShell/comments/zlg7uh/copy_files_from_a_text_list_and_preserve_folder/)how he could copy files listed in a text file to a specific folder, while preserving folder structure
 
-## Test - Get-TestPaths
+##  Copy-FromFile
 
-Creates 3 paths: 
-- one not readable
-- one not existant
-- one normal
-
-## Test - Test-GciErrorHandling
-
-Actually list the 3 test folders and handles the errors
 
 ## HOW TO TEST
 
 ```
-    .\RunTest.ps1 -Verbose
-
-	[Get-ChilItems Error] -> [C:\Users\gp\AppData\Local\Temp\TestGciErrors\NonExistant]
-	ObjectNotFound: (C:\Users\gp\AppData…iErrors\NonExistant:String) [Get-ChildItem], ItemNotFoundException
-
-	[Get-ChilItems Error] -> [C:\Users\gp\AppData\Local\Temp\TestGciErrors\NotReadable]
-	PermissionDenied: (C:\Users\gp\AppData…iErrors\NotReadable:String) [Get-ChildItem], UnauthorizedAccessException
-
-	C:\Users\gp\AppData\Local\Temp\TestGciErrors\Normal\child_1
-	C:\Users\gp\AppData\Local\Temp\TestGciErrors\Normal\child_2
-	C:\Users\gp\AppData\Local\Temp\TestGciErrors\Normal\child_3
+    Copy-FromFile -Destination $Destination -File $File -Overwrite -SilentErrors
 ```
 
-![Results](https://raw.githubusercontent.com/arsscriptum/PowerShell.Reddit.Support/main/Gci.ErrorHandling/img/err.png)
+[Copy-FromFile.ps1](https://github.com/arsscriptum/PowerShell.Reddit.Support/blob/main/Copy-FromFile/Copy-FromFile.ps1)
